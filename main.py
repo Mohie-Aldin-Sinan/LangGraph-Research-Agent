@@ -6,11 +6,17 @@ def main():
         "name": "Mohie",
         "greeting": "",
         "response": "",
-        "topic": "Ai agents",
-        "research_plan": "",
+        "topic": "AI Agents",
+        "research_plan": [],
+        "retry_count": 0,
+        "error": "",
     }
 
     result = research_graph.invoke(initial_state)
+
+    if result["error"]:
+        print(f"Research failed: {result['error']}")
+        return
 
     print(result["response"])
 

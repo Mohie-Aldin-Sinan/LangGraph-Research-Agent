@@ -7,3 +7,5 @@ class ResearchState(TypedDict):
     response: str
     topic: str
     research_plan: list[str]
+    retry_count: int
+    error: str
