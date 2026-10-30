@@ -1,5 +1,32 @@
+from urllib.parse import urlsplit, urlunsplit
+
 from app.state import ResearchState
 from app.tools import search_web
+
+
+def get_result_key(result: dict) -> str:
+    """Generate a unique identifier for a search result."""
+
+    url = result.get("url", "")
+
+    if isinstance(url, str) and url.strip():
+        parsed_url = urlsplit(url.strip())
+
+        normalized_url = urlunsplit((
+            parsed_url.scheme.lower(),
+            parsed_url.netloc.lower(),
+            parsed_url.path.rstrip("/") or "/",
+            parsed_url.query,
+            "",
+        ))
+
+        return normalized_url
+
+    # Fallback when the result has no URL.
+    title = " ".join(result.get("title", "").lower().split())
+    content = " ".join(result.get("content", "").lower().split())
+
+    return f"{title}|{content}"
 
 
 def greet_user(state: ResearchState) -> dict:
@@ -21,12 +48,36 @@ def plan_research(state: ResearchState) -> dict:
 
 
 def search_research(state: ResearchState) -> dict:
-    """Search the web using the research topic."""
+    """Search using every research query and remove duplicate results."""
 
-    results = search_web(state["topic"])
+    all_results = []
+    seen_results = set()
+
+    for query in state["research_plan"]:
+
+        print(f"Searching: {query}")
+
+        results = search_web(query)
+
+        query_results = results.get("results", [])
+
+        for result in query_results:
+
+            if not isinstance(result, dict):
+                continue
+
+            result_key = get_result_key(result)
+
+            if result_key in seen_results:
+                continue
+
+            seen_results.add(result_key)
+            all_results.append(result)
+
+    print(f"Unique results collected: {len(all_results)}")
 
     return {
-        "search_results": results.get("results", [])
+        "search_results": all_results
     }
 
 
