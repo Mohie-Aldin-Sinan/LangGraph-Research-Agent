@@ -82,23 +82,46 @@ def search_research(state: ResearchState) -> dict:
 
 
 def extract_findings(state: ResearchState) -> dict:
-    """Extract useful text from the search results."""
+    """Extract and clean useful information from search results."""
 
     findings = []
 
     for result in state["search_results"]:
+
+        if not isinstance(result, dict):
+            continue
+
         title = result.get("title", "")
         content = result.get("content", "")
         url = result.get("url", "")
 
-        if content.strip():
-            findings.append(
-                f"Title: {title}\n"
-                f"Source: {url}\n"
-                f"Finding: {content}"
-            )
+        # Validate content.
+        if not isinstance(content, str):
+            continue
 
-    return {"findings": findings}
+        content = content.strip()
+
+        if not content:
+            continue
+
+        # Clean metadata.
+        if not isinstance(title, str):
+            title = ""
+
+        if not isinstance(url, str):
+            url = ""
+
+        finding = {
+            "title": title.strip() or "Untitled source",
+            "url": url.strip(),
+            "content": content,
+        }
+
+        findings.append(finding)
+
+    return {
+        "findings": findings
+    }
 
 
 def prepare_response(state: ResearchState) -> dict:
@@ -110,10 +133,23 @@ def prepare_response(state: ResearchState) -> dict:
             "error": "No useful findings were retrieved.",
         }
 
-    findings_text = "\n\n".join(
-        f"{index}. {finding}"
-        for index, finding in enumerate(
-            state["findings"],
+    findings_text = ""
+
+    for index, finding in enumerate(
+        state["findings"],
+        start=1,
+    ):
+        findings_text += (
+            f"### Finding {index}\n"
+            f"Title: {finding['title']}\n"
+            f"Source: {finding['url'] or 'URL unavailable'}\n"
+            f"Content: {finding['content']}\n\n"
+        )
+
+    research_plan = "\n".join(
+        f"{index}. {step}"
+        for index, step in enumerate(
+            state["research_plan"],
             start=1,
         )
     )
@@ -122,15 +158,9 @@ def prepare_response(state: ResearchState) -> dict:
         f"{state['greeting']}\n\n"
         f"# Research Report: {state['topic']}\n\n"
         f"## Findings\n\n"
-        f"{findings_text}\n\n"
+        f"{findings_text}\n"
         f"## Research Plan\n\n"
-        + "\n".join(
-            f"{index}. {step}"
-            for index, step in enumerate(
-                state["research_plan"],
-                start=1,
-            )
-        )
+        f"{research_plan}"
     )
 
     return {

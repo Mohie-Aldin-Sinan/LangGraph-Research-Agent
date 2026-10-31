@@ -7,7 +7,7 @@ class ResearchState(TypedDict):
     topic: str
     research_plan: list[str]
     search_results: list[dict]
-    findings: list[str]
+    findings: list[dict[str, str]]
     response: str
     retry_count: int
     error: str
